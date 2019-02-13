@@ -4,10 +4,26 @@
  * @license GNU GPL v3 (see LICENSE)
  ******************************************************************************/
 
-#include <HardwareSerial.h>
 #include "CometBLE.hpp"
 
-extern HardwareSerial Serial;
+#define print(arg) \
+  if (s_serial != nullptr) \
+  { \
+    s_serial->print(arg); \
+  }
+
+#define println(arg) \
+  if (s_serial != nullptr) \
+  { \
+    s_serial->println(arg); \
+  }
+
+#define _catch() \
+  catch (...) \
+  { \
+    print("Exception at line "); \
+    println(__LINE__); \
+  }
 
 static const std::string DEVICE_NAME = "Comet Blue";
 
@@ -27,6 +43,8 @@ BLEScan * CometBLE::s_pBLEScan = nullptr;
 char CometBLE::s_device_id_buffer[DEVICE_ID_BUFFER_LENGTH] = { 0 };
 std::string CometBLE::s_device_ids = std::string(s_device_id_buffer, 0);
 
+Stream * CometBLE::s_serial = nullptr;
+
 void CometBLE::init()
 {
   if (s_pBLEScan == nullptr)
@@ -42,7 +60,7 @@ std::string CometBLE::scan(uint32_t timeout_s)
   init();
 
   BLEScanResults foundDevices = s_pBLEScan->start(timeout_s);
-  Serial.print("Devices found: ");
+  print("Devices found: ");
   uint8_t id_found = 0;
   char * ptr_buffer = s_device_id_buffer;
   for (uint8_t i = 0; i < foundDevices.getCount(); i++)
@@ -53,7 +71,7 @@ std::string CometBLE::scan(uint32_t timeout_s)
     if (deviceName.compare(DEVICE_NAME) == 0)
     {
       std::string str_address = address.toString();
-      Serial.println(str_address.c_str());
+      println(str_address.c_str());
       memcpy(ptr_buffer, str_address.c_str(), str_address.length());
       ptr_buffer += str_address.length();
       *ptr_buffer = ';';
@@ -64,7 +82,7 @@ std::string CometBLE::scan(uint32_t timeout_s)
       }
     }
   }
-  Serial.println("Scan done!");
+  println("Scan done!");
 
   s_device_ids = std::string(s_device_id_buffer, static_cast<uintptr_t>(ptr_buffer - s_device_id_buffer));
 
@@ -78,6 +96,11 @@ CometBLE::CometBLE(std::string address, uint32_t password)
     m_password(password)
 {
   init();
+}
+
+void CometBLE::setSerial(Stream &serial)
+{
+  s_serial = &serial;
 }
 
 std::string CometBLE::getDeviceName()
@@ -128,7 +151,7 @@ uint8_t CometBLE::getPresetTemperature()
 
 std::string CometBLE::getValueNoPasswd(const BLEUUID suuid, const BLEUUID cuuid)
 {
-  std::string retval;
+  std::string retval = "";
 
   try
   {
@@ -136,13 +159,7 @@ std::string CometBLE::getValueNoPasswd(const BLEUUID suuid, const BLEUUID cuuid)
     BLERemoteCharacteristic * pValueChar = pValueService->getCharacteristic(cuuid);
     retval = pValueChar->readValue();
   }
-  catch (...)
-  {
-    Serial.print("Exception at line ");
-    Serial.println(__LINE__);
-    retval = "";
-    // Todo.
-  }
+  _catch();
 
   return retval;
 }
@@ -170,13 +187,13 @@ std::string CometBLE::getBinary(const BLEUUID suuid, const BLEUUID cuuid)
 {
   std::string retval = getValue(suuid, cuuid);
 
-  Serial.print(":");
+  print(":");
   for (size_t i = 0; i < retval.length(); i++)
   {
-    Serial.print(" ");
-    Serial.print(static_cast<int32_t>(retval[i]));
+    print(" ");
+    print(static_cast<int32_t>(retval[i]));
   }
-  Serial.println("\n");
+  println("\n");
 
   return retval;
 }
@@ -185,7 +202,7 @@ std::string CometBLE::getString(const BLEUUID suuid, const BLEUUID cuuid)
 {
   std::string retval = getValue(suuid, cuuid);
 
-  Serial.println(retval.c_str());
+  println(retval.c_str());
 
   return retval;
 }
@@ -201,12 +218,7 @@ void CometBLE::open()
     pPasswdChar->writeValue(reinterpret_cast<uint8_t*>(&m_password), sizeof(m_password), true);
     pPasswdChar->writeValue(reinterpret_cast<uint8_t*>(&m_password), sizeof(m_password), true);
   }
-  catch (...)
-  {
-    Serial.print("Exception at line ");
-    Serial.println(__LINE__);
-    // Todo.
-  }
+  _catch();
 }
 
 void CometBLE::close()
@@ -215,12 +227,7 @@ void CometBLE::close()
   {
     m_pClient->disconnect();
   }
-  catch (...)
-  {
-    Serial.print("Exception at line ");
-    Serial.println(__LINE__);
-    // Todo.
-  }
+  _catch();
 }
 
 void CometBLE::setValue(const BLEUUID suuid, const BLEUUID cuuid, const std::string value)
@@ -233,12 +240,7 @@ void CometBLE::setValue(const BLEUUID suuid, const BLEUUID cuuid, const std::str
     BLERemoteCharacteristic * pValueChar = pValueService->getCharacteristic(cuuid);
     pValueChar->writeValue(value, true);
   }
-  catch (...)
-  {
-    Serial.print("Exception at line ");
-    Serial.println(__LINE__);
-    // Todo.
-  }
+  _catch();
 
   close();
 }

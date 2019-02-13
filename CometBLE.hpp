@@ -7,6 +7,8 @@
 #include <BLEDevice.h>
 #include <BLEScan.h>
 
+#include "Stream.h"
+
 class CometBLE
 {
   public:
@@ -16,6 +18,8 @@ class CometBLE
     static std::string scan(uint32_t timeout_s = 30);
 
     CometBLE(std::string address, uint32_t password = 0);
+
+    static void setSerial(Stream &serial);
 
     std::string getDeviceName();
 
@@ -59,6 +63,8 @@ class CometBLE
     static const size_t DEVICE_ID_BUFFER_LENGTH = MAX_DEVICE_ID * DEVICE_ID_LENGTH;
     static char s_device_id_buffer[DEVICE_ID_BUFFER_LENGTH];
     static std::string s_device_ids;
+
+    static Stream * s_serial;
 
     BLEClient * const m_pClient;
     const BLEAddress m_address;
