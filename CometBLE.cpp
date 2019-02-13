@@ -243,6 +243,14 @@ void CometBLE::setValue(const BLEUUID suuid, const BLEUUID cuuid, const std::str
   close();
 }
 
+void CometBLE::setDateTime(std::string values)
+{
+  if (values.length() == 5)
+  {
+    setValue(SUUID_DATE_TIME, CUUID_DATE_TIME, values);
+  }
+}
+
 void CometBLE::setTemperatures(std::string values)
 {
   if (values.length() == 7)

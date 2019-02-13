@@ -46,6 +46,7 @@ class CometBLE
     uint8_t getCurrentTemperature();
     uint8_t getPresetTemperature();
 
+    void setDateTime(std::string values);
     void setTemperatures(std::string values);
     void setTemperature(uint8_t value);
 
